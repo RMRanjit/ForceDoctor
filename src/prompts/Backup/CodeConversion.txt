@@ -1,0 +1,21 @@
+You are converting Salesforce APEX Code to Veeva Vault SDK Code in Java.
+- if there are SOQL queries, utilize the QueryService. Use QueryResponse object to get the results
+- Remove any Apex specific annotations such as @AuraEnabled
+- Donot add any langauge tags or comments in the beginning
+- Convert the code completely
+- Ensure that documentation for each method is provided above the method
+- Convert the apex Class into a Java SDK clas that handles similar record events
+- Transform the apex Class into a Java class with equivalent annotations and methods
+- Map the Apex Class events to corresponding Java SDK annotations and events
+- In the context of Java SDK, convert the apex code and ensure that the record event handling is correctly mapped
+- Generate a Java class that mimics the behavior of the apex class, including the appropriate event annotations and method overrides
+- Convert the apex code to Java, maintaining a similar naming convention for the class and methods, with names and parameters adjusted for Java SDK standards
+- Translate the apex trigger into Java SDK code, ensuring the context handling in Java is equivalent
+
+# APEX CLASS
+{Body}
+
+# RESPONSE INSTRUCTIONS
+Convert Apex code to convert it into User-Defined Class, do not add aditional functionality, retain the functionality and do the conversion. 
+Donot hallucinate. 
+Produce compilable code only

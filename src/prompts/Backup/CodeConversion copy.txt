@@ -1,0 +1,66 @@
+You are converting Salesforce APEX Code to Veeva Vault SDK Code.
+
+
+Import the following packages as necessary
+
+import com.veeva.vault.sdk.api.core.RequestContext; 
+import com.veeva.vault.sdk.api.core.TriggerOrder; 
+import com.veeva.vault.sdk.api.core.ValueType; 
+import com.veeva.vault.sdk.api.data.RecordTrigger; 
+import com.veeva.vault.sdk.api.data.RecordTriggerInfo; 
+import com.veeva.vault.sdk.api.data.RecordEvent; 
+import com.veeva.vault.sdk.api.data.RecordTriggerContext; 
+import com.veeva.vault.sdk.api.data.RecordChange; 
+import com.veeva.vault.sdk.api.query.QueryResponse; 
+import com.veeva.vault.sdk.api.query.QueryResult; 
+import java.time.LocalDate; 
+
+Importing Packages
+1. A custom record trigger must be under the com.veeva.vault.custom package. You can have further sub-package names as you see fit to organize your triggers. For example, you might use com.veeva.vault.custom.rim.submissions.triggers to indicate custom triggers for a RIM Submissions project. 
+2. Only references to Vault Java SDK (com.veeva.vault.sdk.api.*) and a limited number of allowlisted classes, interfaces, and methods in the JDK are allowed. For example, String, LocalDate, List, etc. 
+Using Annotations
+The class annotation (@RecordTriggerInfo) indicates that this class is a record trigger. The annotation specifies the Object, Event(s), and Order of execution. 
+“object”: Must be a valid object name. For example, product__v. This specifies the object that the trigger code will execute on. 
+“event”: Can be a single Event or multiple Events, for example, RecordEvent.BEFORE_INSERT, RecordEvent.BEFORE_UPDATE. This specifies the Event(s) that the trigger code will execute on. 
+“order”: [Optional] the order a trigger will execute relative to other triggers on the same object and Event. Lower orders execute first. 
+
+Defining Class Name 
+The class name declaration must include the public modifier . As a best practice, class name should indicate the object affected by this trigger and some functional description, for example, ProductFieldDefaults implements RecordTrigger means a trigger on Product that defaults some field values. 
+
+Methods
+You must implement execute() method for the RecordTrigger interface. This method has an instance of RecordTriggerContext passed in, so you can interact with the record(s) on which a user has initiated some operation. 
+
+Usage of Context Record(s) 
+When a user performs a record operation whether by UI or API, such as creating a new record, the record being created is the context record. The operation may have multiple context records such as in a Bulk Create. 
+
+A list of records affected by the operation can be retrieved from RecordTriggerContext#getRecordChanges, and you can loop through each record to get field values and/or set field values. Your business logic is enclosed in this loop. 
+
+The fieldName argument must be a valid field name in the object. The fieldValue argument must be an object of the appropriate data type for the field in the fieldName argument. Use the Data Type Map to find out how data types are mapped to objects in Vault. 
+
+Logging is an essential part of any application, and the LogService interface provides methods to send messages to the Debug Log and Runtime Log. Below is the example for logging debug logs 
+
+
+Query Service 
+example, imagine a simple VQL query to return the name and ID of all documents where the product is Cholecap. 
+SELECT name__v, id FROM documents WHERE product__v = '00P000000000119' 
+
+The example below creates a new instance of QueryService called queryService, then uses the Query Builder to create the same query as shown above. 
+QueryService queryService = ServiceLocator.locate(QueryService.class); 
+Query myQuery= queryService.newQueryBuilder() 
+.withSelect(VaultCollections.asList("name__v", "id")) 
+.withFrom("documents") 
+.withWhere("product__v = '00P000000000119'") 
+.build(); 
+
+ 
+
+Creating User-Defined Classes 
+A user-defined class is a Java class which uses the @UserDefinedClassInfo class annotation. For example, the following illustrates a user-defined class ValidationUtils: 
+@UserDefinedClassInfo 
+
+
+use streamResults() & stream(), logService whereever iteration and logging is requried if applicable. Use getResultCount() to validate the query response. 
+
+Below is the Apex code to convert it into User-Defined Class, do not add aditional functionality just retain the functionality and do the conversion 
+
+{{Body}}

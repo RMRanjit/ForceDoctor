@@ -1,0 +1,145 @@
+"use client"
+import { getTopic } from "@/lib/Salesforce";
+import { useEffect, useState } from "react";
+import { TableCell, Table, TableHead, TableBody, TableFooter, TableRow } from "../ui/table";
+import { Button } from "../ui/button";
+import { Download, Loader } from "lucide-react";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
+
+type Props = {
+    objectInfo: any;
+};
+
+export default function FieldHistoryData ({ objectInfo }: Props) {
+  const [data, setData] = useState<any | undefined>();
+  const [objectName, setObjectName] = useState<any | undefined>();
+  const [isLoading, setIsLoading] = useState<any | undefined>();
+
+    useEffect(() => {
+        const getFieldHistoryDataFromServer = async () => {
+        //Setting the Loader On
+        setIsLoading(true);
+        let object, fieldHistoryData;
+        //Getting the objectInfo from Custom Object/ Standard Object/ Custom Field
+        console.log("FieldHistory: getFieldHistoryDataFromServer: The object for Field History is: ", objectInfo);
+        if (objectInfo.attributes.type == "CustomObject"){
+          //If it is coming from Custom Objects, then using this to get the Name Space Prefix
+          const getCustomObject = await getTopic("CustomObjectFields",
+            {id : objectInfo.Id}
+          );
+          console.log(getCustomObject);
+          //Adding the Naming Convention for Custom Objects
+          object = getCustomObject?.[0]?.NamespacePrefix +"__"+objectInfo.DeveloperName+"__c";
+          //Setting the object name
+          setObjectName(objectInfo.DeveloperName);
+          //To get the list of field history for the specific custom object
+          fieldHistoryData = await getTopic("fieldHistoryDataForCustomObjects",
+          {objectName : object}
+        );
+        setData(fieldHistoryData?.[0]);
+        // } else if(objectInfo.attributes.type == "CustomField"){
+        //   object = objectInfo.Name;
+        //   setObjectName(object);
+        //   //To get the list of field history for the specific custom field
+        //   fieldHistoryData = await getTopic("fieldHistoryDataForCustomFields",
+        //   {objectName : object}
+        // );
+        // const as = fieldHistoryData?.[0].records?.filter((item: any) => item.Field === objectInfo.Name);
+        // const data ={
+        //   records:as
+        // };
+        // setData(data);
+        } else {
+          //Setting the object name
+          object = objectInfo.label;
+          setObjectName(object);
+          //To get the list of field history for the specific standard object
+          fieldHistoryData = await getTopic("fieldHistoryDataForStandardObjects",
+          {objectName : object}
+        );
+        setData(fieldHistoryData?.[0]);
+        }
+        //Turning the Loader False after Data Loading
+        setIsLoading(false);
+        };
+
+        getFieldHistoryDataFromServer();
+    }, [objectInfo]);
+
+    const onDownload = () => {
+      //Creating a new excel file
+    const workbook = XLSX.utils.book_new();
+    //Storing the data to excel sheet
+    const worksheet = XLSX.utils.json_to_sheet(data);
+    XLSX.utils.book_append_sheet(workbook, worksheet, "History");
+
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const dataBlob = new Blob([excelBuffer], {
+      type: "application/octet-stream",
+    });
+    //Saving the file as "History of <Name>.xlsx"
+    saveAs(dataBlob, "History of " + objectName + ".xlsx");
+    }
+
+    if (isLoading) {
+      return <Loader className="h-8 w-8 animate-spin duration-9000" />;
+    }
+
+    return(
+        <div>
+      <div className="flex flex-row  ">
+        <span className="flex-1  align-middle">
+          History for {objectName}
+        </span>
+        <Button
+          variant="ghost"
+          onClick={onDownload}
+          className="justify-end pb-2"
+        >
+          <Download />
+        </Button>
+      </div>
+      {data?.totalSize > 0 ? (
+        <Table>
+              <TableBody>
+                <TableRow>
+                  <TableHead>Action</TableHead>
+                  <TableHead>Data Type</TableHead>
+                  <TableHead>Old Value</TableHead>
+                  <TableHead>New Value</TableHead>
+                  <TableHead>Date & Time of Change</TableHead>
+                  <TableHead>Changed By</TableHead>
+                </TableRow>
+              </TableBody>
+              <TableBody>
+              {data?.records?.map((field: any) => (
+                  <TableRow key={field.Id} className=" hover: bg-secondary">
+                    <TableCell>{field.Field}</TableCell>
+                    <TableCell>{field.DataType}</TableCell>
+                      <TableCell>{field.OldValue}</TableCell>
+                      <TableCell>{field.NewValue}</TableCell>
+                      <TableCell>{field.CreatedDate}</TableCell>
+                      <TableCell>{field.CreatedById}</TableCell>
+                  </TableRow>
+              ))}
+              </TableBody>
+              <TableFooter>
+                <TableCell>Count: {data?.totalSize}</TableCell>
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+                <TableCell></TableCell>
+              </TableFooter>
+            </Table>
+      ) : (
+        <div>Please enable the Field History Tracking to get the data. No Data available now.</div>
+      )
+    }
+            </div>
+    );
+}

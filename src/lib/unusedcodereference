@@ -1,0 +1,93 @@
+interface ApexClassMember {
+  Body: string;
+  ContentEntityId: string;
+  SymbolTable: SymbolTable;
+}
+
+interface SymbolTable {
+  name: string;
+  methods: Method[];
+  externalReferences: ExternalReference[];
+}
+
+interface Method {
+  name: string;
+  visibility: SymbolVisibility;
+  references: any[] | null;
+}
+
+interface ExternalReference {
+  name: string;
+  methods: ExternalMethod[];
+}
+
+interface ExternalMethod {
+  name: string;
+}
+
+enum SymbolVisibility {
+  PRIVATE,
+  GLOBAL,
+  PUBLIC,
+}
+
+function findUnusedMethods(
+  apexClassMembersWithSymbols: ApexClassMember[]
+): string {
+  const declaredMethods: Set<string> = new Set();
+  const methodReferences: Set<string> = new Set();
+
+  for (const apexClassMember of apexClassMembersWithSymbols) {
+    const symbolTable = apexClassMember.SymbolTable;
+    if (!symbolTable) continue;
+
+    for (const method of symbolTable.methods) {
+      if (
+        method.name.toLowerCase().includes("test") &&
+        method.visibility === SymbolVisibility.PRIVATE &&
+        (!method.references || method.references.length === 0)
+      ) {
+        continue;
+      }
+
+      if (method.visibility === SymbolVisibility.GLOBAL) {
+        continue;
+      }
+
+      if (method.name === "aot") {
+        continue;
+      }
+
+      const qualifiedMethodName = `${symbolTable.name}.${method.name}`;
+      declaredMethods.add(qualifiedMethodName);
+
+      if (method.references && method.references.length > 0) {
+        methodReferences.add(qualifiedMethodName);
+      }
+    }
+
+    for (const externalRef of symbolTable.externalReferences) {
+      for (const externalMethodRef of externalRef.methods) {
+        methodReferences.add(`${externalRef.name}.${externalMethodRef.name}`);
+      }
+    }
+  }
+
+  const unusedMethods: string[] = Array.from(declaredMethods)
+    .filter((declaredMethod) => !methodReferences.has(declaredMethod))
+    .sort();
+
+  return renderHTMLTable(unusedMethods);
+}
+
+function renderHTMLTable(unusedMethods: string[]): string {
+  const tableRows = unusedMethods
+    .map((methodName) => `<tr><td>${methodName}</td></tr>`)
+    .join("");
+  return `<table>${tableRows}</table>`;
+}
+
+// Example usage:
+// const apexClassMembersWithSymbols: ApexClassMember[] = // ... fetch data
+// const unusedMethodsHTML = findUnusedMethods(apexClassMembersWithSymbols);
+// console.log(unusedMethodsHTML);
